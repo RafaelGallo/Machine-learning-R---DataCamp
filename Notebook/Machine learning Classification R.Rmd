@@ -1,0 +1,545 @@
+---
+title: "Machine learning - R"
+output: html_notebook
+---
+
+Cap 01 -  K Nearest Neighbors (K-NN)
+- Classificação com os vizinhos mais próximos KNN
+
+```{r}
+library(class)
+pred <- knn(training_data, testing_data, training_labels)
+```
+
+Reconhecendo um sinal de trânsito com kNN
+
+```{r}
+# Carregar o pacote 'class'
+library(tidyverse)
+library(class)
+library(data.table)
+
+# Cria um vetor de rótulos
+sign_types <- signs$sign_type
+
+# Classifica o próximo sinal observado
+knn(train = signs[-1], test = next_sign, cl = sign_types)
+```
+
+
+```{r}
+# Examine a estrutura do conjunto de dados de sinais
+str(signs)
+
+# Contar o número de sinais de cada tipo
+table(signs$sign_type)
+```
+
+
+```{r}
+# Verifique o nível médio de vermelho do r10 por tipo de sinal
+aggregate(r10 ~ sign_type, data = signs, mean)
+```
+
+Classificando uma coleção de sinais de trânsito
+
+```{r}
+# Use kNN para identificar os sinais de trânsito de teste
+sign_types <- signs$sign_type
+signs_pred <- knn(train = signs[-1], test = test_signs[-1], cl = sign_types)
+
+# Crie uma matriz de confusão dos valores previstos versus reais
+signs_actual <- test_signs$sign_type
+table(signs_pred, signs_actual)
+```
+
+```{r}
+# Calcular a precisão
+mean(signs_pred == signs_actual)
+```
+
+Testando outros valores 'k'
+
+```{r}
+# Calcula a precisão do modelo de linha de base (padrão k = 1)
+k_1 <- knn(train = signs[-1], test = signs_test[-1], cl = sign_types)
+mean(k_1 == signs_actual)
+
+# Modifique o acima para definir k = 7
+k_7 <- knn(train = signs[-1], test = signs_test[-1], cl = sign_types, k= 7)
+mean(k_7 == signs_actual)
+```
+
+```{r}
+# Defina k = 15 e compare com o acima
+k_15 <- knn(train = signs[-1], test = signs_test[-1], cl = sign_types, k = 15)
+mean(k_15 == signs_actual)
+```
+
+Vendo como os vizinhos votaram
+
+```{r}
+# Use o parâmetro prob para obter a proporção de votos para a classe vencedora
+sign_pred <- knn(train = signs[-1], test = signs_test[-1], cl = sign_types, k= 7, prob = TRUE)
+sign_pred
+
+# Obtém o atributo "prob" das classes previstas
+sign_prob <- attr(sign_pred, "prob")
+sign_prob
+
+# Examine as primeiras várias previsões
+head(sign_pred)
+```
+
+```{r}
+# Examinar a proporção de votos para a classe vencedora 
+
+head(sign_prob)
+```
+
+Preparação de dados para K-NN
+
+
+```{r}
+# Define uma função min-max normalize()
+
+normalize <- function(x) {
+  return((x - min(x)) / (max(x) - min(x)))
+}
+
+# Versão normalizada de r1
+summary(normalize(signs$r1))
+
+# versão não normalizada de r1
+summary(signs$r1)
+
+```
+
+# Cap 02 - Naive Bayes
+
+
+```{r}
+# Fazendo previsões com Naives Bayes
+
+library(naivebayes)
+
+# Dados
+m <- read_csv("https://assets.datacamp.com/production/course_2906/datasets/locations.csv")
+m
+
+# Visualizando os cinco primeiros dados
+head(m)
+
+# Visualizando os cinco ultimos dados
+tail(m)
+
+# Modelo Naive bayes
+m <- naive_bayes(m ~ time_of_day, data = location_history)
+m
+```
+
+```{r}
+# Fazendo previsões com Naive Bayes
+future_location <- predict(m, future_conditions)
+future_location
+
+```
+
+```{r}
+# Calcula P(A)
+p_A <- nrow(subset(where9am, location == "office")) / nrow(where9am)
+
+# Calcula P(B)
+p_B <- nrow(subset(where9am, daytype == "weekday")) / nrow(where9am)
+
+# Calcular o P(A e B) observado
+p_AB <- nrow(subset(where9am, location == "office" & daytype == "weekday")) / nrow(where9am)
+
+# Calcule P(A | B) e imprima seu valor
+p_A_given_B <- p_AB / p_B
+p_A_given_B
+```
+
+# Um modelo simples Naive Bayes
+
+```{r}
+# Carregando o pacote naivebayes
+library(naivebayes)
+
+```
+
+```{r}
+# Modelo de previsão
+locmodel <- naive_bayes(location ~ daytype, data = where9am)
+locmodel
+
+```
+
+```{r}
+# Prever a localização das 9h de quinta-feira
+predict(locmodel, newdata = saturday9am)
+
+```
+
+Examinando probabilidades “cruas”
+
+```{r}
+# O pacote 'naivebayes' é carregado na área de trabalho 
+# E o 'locmodel' Naive Bayes foi construído 
+# Examine o modelo de previsão de localização
+
+locmodel
+
+```
+
+```{r}
+# Obtenha as probabilidades previstas para quinta-feira às 9h 
+predict(locmodel, newdata = thursday9am , type = "prob")
+```
+
+```{r}
+# Obtenha as probabilidades previstas para sábado às 9h 
+predict(locmodel, newdata = saturday9am , type = "prob"
+```
+
+Um modelo de localização mais sofisticado
+
+```{r}
+# O pacote 'naivebayes' já está carregado na área de trabalho # Construir um modelo NB de localização 
+
+locmodel <- naive_bayes(local ~ tipo de dia + tipo de hora, dados = locais)
+```
+
+```{r}
+# Prever a localização de Brett em uma tarde de segunda a sexta 
+predict(locmodel, newdata = weekday_afternoon)
+```
+
+```{r}
+# Prever a localização de Brett em uma noite de segunda a sexta 
+predict(locmodel, newdata = weekday_evening)
+```
+
+Preparando-se para imprevistos
+
+```{r}
+# O pacote 'naivebayes' já está carregado na área de trabalho 
+# O modelo de localização Naive Bayes (locmodel) já foi construído # Observe as probabilidades previstas para uma tarde de fim de semana 
+
+predict(locmodel, newdata = week_afternoon, type = "prob")
+```
+
+```{r}
+# Construa um novo modelo usando a correção de Laplace
+locmodel2 <- naive_bayes(location ~ daytype + hourtype, data = locations, laplace = 1)
+locmodel2
+
+# Observe as novas probabilidades previstas para uma tarde de fim de semana
+predict(locmodel2, newdata = weekend_afternoon, type = "prob")
+```
+
+
+Cap 03 - Regressão Logística
+
+Fazendo previsões binárias com regressão
+
+```{r}
+# Construindo modelos de regressão logística simples
+# Examine o conjunto de dados para identificar possíveis variáveis "Independentes"
+str(doadores)
+```
+
+```{r}
+# Explorar a variável dependente
+table(donors$donated)
+
+```
+
+```{r}
+# Construir o modelo regressão logística
+donation_model <- glm(doado ~ bad_address + interest_religion + interest_veterans, dados = doadores, família = "binomial")
+
+# Resuma os resultados do modelo
+summary(donation_model)
+```
+
+Fazendo uma previsão binária
+
+```{r}
+# Estimar a probabilidade de doação
+donors$donation_prob <- predict(donation_model, type = "response")
+donors
+
+# Encontre a probabilidade de doação da perspectiva média
+mean(donors$donated)
+```
+
+```{r}
+# Prever uma doação se a probabilidade de doação for maior que a média
+donors$donation_pred <- ifelse(donors$donation_prob > 0.0504, 1, 0)
+
+# Calcula a precisão do modelo
+mean(donors$donated == donors$donation_pred)
+```
+
+Cálculo de curvas ROC e AUC
+
+```{r}
+# Carrega o pacote pROC
+library(pROC)
+```
+
+```{r}
+# Cria uma curva ROC
+ROC <- roc(donors$donated, donors$donation_prob)
+ROC
+```
+
+```{r}
+# Plote a curva ROC
+plot(ROC, col = "blue")
+
+# Calcular a área sob a curva (AUC) 
+auc(ROC)
+
+```
+
+Codificando recursos categóricos
+
+```{r}
+# Converter a classificação de riqueza em um fator
+donors$wealth_levels <- factor(donors$wealth_rating, levels = c(0, 1, 2, 3), labels = c("Unknown", "Low", "Medium", "High"))
+
+# Use relevel() para alterar a categoria de referência
+donors$wealth_levels <- relevel(donors$wealth_levels, ref = "Medium")
+
+# Veja como nossa codificação de fatores afeta o modelo
+summary(glm(donated ~ wealth_levels, data = donors, family = "binomial"))
+```
+
+Manipulando dados ausentes
+
+
+```{r}
+# Encontre a idade média entre os valores não omissos
+summary(donors$age)
+```
+
+```{r}
+# Imputar valores de idade ausentes com a idade média
+donors$imputed_age <- ifelse(is.na(donors$age), round(mean(donors$age, na.rm = TRUE), 2), donors$age)
+
+# Indicador de valor ausente para a idade
+donors$missing_age <- ifelse(is.na(donors$age), 1, 0)
+```
+
+# Modelo 02 - Construindo um modelo mais sofisticado
+
+```{r}
+# Construir um modelo de recência, frequência e dinheiro (RFM)
+rfm_model <- glm(donated ~ money + recency * frequency, data = donors, family = "binomial")
+rfm_model
+
+# Resuma o modelo RFM para ver como os parâmetros foram codificados
+summary(rfm_model)
+```
+
+```{r}
+# Calcular probabilidades previstas para o modelo RFM
+rfm_prob <- predict(rfm_model, type = "response")
+
+# Plote a curva ROC e encontre AUC para o novo modelo
+ROC <- roc(donors$donated, rfm_prob)
+plot(ROC, col = "red")
+auc(ROC)
+```
+
+# Modelo 03 - Construindo um modelo de regressão passo a passo
+
+
+```{r}
+# Especifique um modelo nulo sem preditores
+null_model <- glm(donated ~ 1, data = donors, family = "binomial")
+null_model
+
+# Especifique o modelo completo usando todos os preditores potenciais
+full_model <- glm(donated ~ ., data = donors, family = "binomial")
+full_model
+
+# Use um algoritmo progressivo para construir um modelo parcimonioso
+step_model <- step(null_model, scope = list(lower = null_model, upper = full_model), direction = "forward")
+step_model
+```
+
+```{r}
+# Estimar a probabilidade de doação passo a passo
+step_prob <- predict(step_model, type = "response")
+step_prob
+
+# Curva roc 
+ROC <- roc(donors$donated, step_prob)
+plot(ROC, col = "red")
+auc(ROC)
+```
+
+Cap 04 - Decision Tree Classificação 
+
+Construindo uma árvore de decisão simples
+```{r}
+# Carregando biblioteca
+library(rpart)
+
+```
+
+```{r}
+# Construir um modelo de empréstimo prevendo o resultado do empréstimo versus o valor do empréstimo e a pontuação de crédito
+loan_model <- rpart(outcome ~ loan_amount + credit_score, data = loans, method = "class", control = rpart.control(cp = 0))
+
+# Faça uma previsão para alguém com bom crédito
+predict(loan_model, newdata = good_credit, type = "class")
+```
+
+```{r}
+# Faça uma previsão para alguém com crédito ruim
+predict(loan_model, newdata = bad_credit, type = "class")
+
+```
+
+Visualizando árvores de classificação
+
+```{r}
+# Visualizando árvores
+
+# Examina o objeto loan_model
+loan_model
+```
+
+```{r}
+# Carregando biblioteca gráfica 
+library(rpart.plot)
+
+# Plotando gráfico da árvore
+rpart.plot(loan_model)
+```
+
+```{r}
+# Plote o loan_model com configurações personalizadas
+rpart.plot(loan_model, type = 3, box.palette = c("red", "green"), fallen.leaves = TRUE)
+```
+
+Criando conjuntos de dados de teste aleatórios
+
+```{r}
+# Determina o número de linhas para treinamento 
+nrow(loans) * 0,75
+```
+
+```{r}
+# Crie uma amostra aleatória de IDs de linha
+sample_rows <- sample(nrow(loans), nrow(loans) * 0.75)
+
+# Cria o conjunto de dados de treinamento
+loans_train <- loans[sample_rows, ]
+
+# Criar o conjunto de dados de teste
+loans_test <- loans[-sample_rows, ]
+
+```
+
+Modelo 02 - Construindo e avaliando uma árvore maior
+
+```{r}
+# Cresce uma árvore usando todos os dados de candidatos disponíveis
+loan_model <- rpart(outcome ~ ., data = loans_train, method = "class", control = rpart.control(cp = 0))
+
+# Faça previsões no conjunto de dados de teste
+loans_test$pred <- predict(loan_model, loans_test, type = "class")
+
+# Examine a matriz de confusão
+table(loans_test$pred, loans_test$outcome)
+```
+
+```{r}
+# Calcula a precisão no conjunto de dados de teste
+mean(loans_test$pred == loans_test$outcome)
+
+```
+
+Evitando árvores crescidas
+
+```{r}
+# Cresça uma árvore com profundidade máxima de 6
+loan_model <- rpart(outcome ~ ., data = loans_train, method = "class", control = rpart.control(cp = 0, maxdepth = 6))
+
+
+# Faça uma previsão de classe no conjunto de teste
+loans_test$pred <- predict(loan_model, newdata = loans_test, type = "class")
+
+
+# Calcular a precisão da árvore mais simples
+mean(loans_test$pred == loans_test$outcome)
+
+```
+
+```{r}
+# Troque maxdepth por uma divisão mínima de 500
+loan_model <- rpart(outcome ~ ., data = loans_train, method = "class", control = rpart.control(minsplit = 500, cp = 0))
+loan_model
+
+# Rode isto. Como a precisão muda?
+loans_test$pred <- predict(loan_model, loans_test, type = "class")
+mean(loans_test$pred == loans_test$outcome)
+```
+
+Criando uma árvore bem podada
+
+```{r}
+# Cresce uma árvore excessivamente complexa
+loan_model <- rpart(outcome ~ ., data = loans_train, method = "class", control = rpart.control(cp = 0))
+
+# Examine o gráfico de complexidade
+plotcp(loan_model)
+```
+
+```{r}
+# Pode a árvore 
+loan_model_pruned <- prune(loan_model, cp = 0,0014) 
+
+# Calcula a precisão da árvore podada 
+loans_test$pred <- predict(loan_model_pruned, newdata = loans_test, type = "class")
+mean(loans_test$pred == loans_test$outcome)
+```
+
+Construindo um modelo de floresta aleatória
+
+```{r}
+# Carregando a biblioteca random forest
+library(randomForest)
+
+```
+
+```{r}
+# Construir um modelo de floresta aleatória
+loan_model <- randomForest(outcome ~ ., data = loans_train, method = "class")
+
+# Calcula a precisão da floresta aleatória
+loans_test$pred <- predict(loan_model, newdata = loans_test)
+mean(loans_test$pred == loans_test$outcome)
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
