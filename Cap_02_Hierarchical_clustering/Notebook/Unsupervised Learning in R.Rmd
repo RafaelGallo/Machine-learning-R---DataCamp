@@ -1,0 +1,685 @@
+---
+title: "Aprendizado não supervisionado em R"
+author: "Rafael"
+date: "03/03/2022"
+output: html_document
+---
+
+# Curso os tópicos
+
+- Aprendizado não supervisionado em R
+- Agrupamento hierárquico
+- Redução de dimensionalidade com PCA
+- Juntando tudo com um estudo de caso
+
+# Recursos adicionais
+
+- Fazendo biplots mais agradáveis com ggplot2
+- Os 10 principais algoritmos de mineração de dados em inglês simples
+- bom artigo que fala sobre k-means e outros algoritmos em inglês simples
+
+# Aprendizado não supervisionado em R
+
+- 3 tipos principais de aprendizado de máquina:
+- Objetivo é encontrar estrutura em dados não rotulados dados não rotulados são dados sem destinos.
+- Aprendizagem supervisionada: Regressão ou classificação
+Objetivo é prever a quantidade ou o rótulo.
+
+# Aprendizado por reforço
+- Um computador aprende por feedback de operar em um ambiente real ou sintético.
+
+# Dois grandes objetivos:
+- Encontrar subgrupos homogêneos dentro de uma população isso é chamado de aglomerados
+- Exemplo: segmentação de um mercado de consumidores com base em características demográficas e histórico de compras.
+- Exemplo: encontre filmes semelhantes com base nos recursos de cada filme e nas resenhas dos filmes encontrar padrões nas características dos dados.
+- Redução de dimensionalidade: Um método para diminuir o número de recursos para descrever uma conservação enquanto mantém o conteúdo máximo de informação sob as restrições de menor dimensionalidade.
+- Encontrar padrões nas fetures dos dados.
+- Visualização de dados de alta dimensão é difícil produzir boas visualizações além de 3 ou 4 dimensões e também consumir etapa de pré-processamento para aprendizado supervisionado.
+
+# Introdução ao cluster k-means
+
+- Algoritmo usado para encontrar subgrupos homogêneos em uma população.
+- K-means vem na base R.
+- Número de centros ou grupos.
+- Número de corridas. começa atribuindo pontos aleatoriamente aos grupos e você pode encontrar mínimos locais, portanto, executá-lo várias vezes ajuda a encontrar o mínimo global.
+- Você pode executar kmeans muitas vezes para estimar o número de subgrupos quando não for conhecido a priori.
+- Agrupamento k-means
+
+
+
+# Bibliotecas e dados
+```{r}
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(stringr)
+```
+
+# Agrupamento k-means
+```{r}
+x <- rbind(matrix(rnorm(5000, sd = 0.3), ncol = 2),
+           matrix(rnorm(5000, mean = 1, sd = 0.3), ncol = 2))
+head(x)
+
+```
+
+
+```{r}
+# Visualizando os dados
+str(x)
+```
+
+# Modelo agrupamento k-means
+Modelo k-means: km.out
+```{r}
+km.out <- kmeans(x, centers = 3, nstart = 20)
+```
+
+# Inspecione o resultado
+```{r}
+summary(km.out)
+```
+
+# Cluster do modelo
+```{r}
+km.out$cluster
+```
+
+# Objeto km.out
+```{r}
+km.out
+```
+
+# Gráfico Scatter plot 
+```{r}
+plot(x, col = km.out$cluster, main = "Cluster",
+     xlab = "Dados",
+     ylab = "Total")
+
+```
+
+# Configurar grade de plotagem 2 x 3
+```{r}
+par(mfrow = c(2, 3))
+
+```
+
+# Definir seed
+```{r}
+set.seed(1)
+
+for(i in 1:6) {
+  # Modelo K-Means
+  km.out <- kmeans(x, centers = 3, nstart = 1)
+  
+  # Gráfico
+  plot(x, col = km.out$cluster, 
+       main = km.out$tot.withinss, 
+       xlab = "Cluster dos", ylab = "Total")
+}
+```
+# Manipulando algoritmos aleatórios
+
+- Configurar grade de plotagem 2 x 3
+
+# Como kmeans() funciona e questões práticas
+
+- Processo de k-médias:
+
+  - Atribuir aleatoriamente todos os pontos a um cluster
+  - Calcular o centro de cada cluster
+  - Converter pontos para cluster do centro mais próximo
+  - Se nenhum ponto mudou, feito, caso contrário, repita
+  - Calcular novos pontos baseados no novo centro
+  - Converter pontos para cluster do centro mais próximo e assim por diante
+
+- Seleção do modelo:
+
+  - O melhor resultado é baseado no total dentro da soma dos quadrados do cluster
+  - Executar muitas vezes para obter o ótimo global
+  - R irá automaticamente executar a corrida com o menor valor total
+
+- Determinando o número de clusters
+
+  - Enredo de seixos
+  - Procure o cotovelo
+  - Descobrir onde a adição no novo cluster não muda melhor dentro de muito
+  - Geralmente não há cotovelo claro em dados do mundo real
+
+```{r}
+# Set up 2 x 3 plotting grid
+par(mfrow = c(2, 3))
+
+# Set seed
+set.seed(1)
+
+for(i in 1:6) {
+  # Run kmeans() on x with three clusters and one start
+  km.out <- kmeans(x, centers = 3, nstart = 1)
+  
+  # Plot clusters
+  plot(x, col = km.out$cluster, 
+       main = km.out$tot.withinss, 
+       xlab = "", ylab = "")
+}
+```
+# Selecionando o número de clusters
+
+```{r}
+# Inicializa o total dentro do erro de soma dos quadrados: wss
+wss <- 0
+
+# Para 1 a 15 centros de cluster
+for (i in 1:15) {
+  km.out <- kmeans(x, centers = i, nstart = 20)
+  # Salva o total dentro da soma dos quadrados na variável wss
+  wss[i] <- km.out$tot.withinss
+}
+
+# Plotar o total dentro da soma dos quadrados e. número de clusters
+plot(1:15, wss, type = "b", 
+     xlab = "Número de clusters", 
+     ylab = "Dentro de grupos soma de quadrados")
+
+# Defina k igual ao número de clusters correspondentes à localização do cotovelo
+# k <- 2
+```
+# Agrupamento hierárquico
+
+
+# Introdução ao agrupamento hierárquico
+
+- Normalmente usado quando o número de clusters não é conhecido antes do tempo
+- Duas abordagens. de baixo para cima e de cima para baixo. vamos nos concentrar em baixo para cima
+
+# Processar
+  - Atribuir cada ponto ao seu próprio cluster
+  - Juntando os dois clientes/pontos mais próximos em um novo cluster
+  - Continue até que haja um cluster
+  - A maneira como você calcula a distância entre os clusters é um parâmetro e será abordado mais tarde
+  - Temos que primeiro calcular a distância euclidiana entre todos os pontos (faz uma grande matriz) usando a função dist()
+  - Isso é passado para a função hclust()
+  
+  
+# Agrupamento hierárquico com resultados
+```{r}
+head(x)
+```
+
+# Criar modelo de cluster hierárquico: hclust.out
+```{r}
+hclust.out <- hclust(dist(x))
+
+# O resultado do modelo
+summary(hclust.out)
+```
+# Selecionando o número de clusters
+  
+  - Você pode construir um dendrograma das distâncias entre os pontos
+  - Então você escolhe o número de clusters ou a altura (também conhecida como distância) que deseja dividir o cluster.
+  - Pense nisso como desenhar uma linha horizontal através do dendrograma
+  - A função cutree() em R permite dividir os clusters hierárquicos em clusters definidos por número ou por distância (altura)
+
+# Gráfico 
+```{r}
+plot(hclust.out)
+abline(h = 7, col = "red")
+```
+# Corte por altura
+```{r}
+cutree(hclust.out, h = 7)
+```
+# Número de clusters
+```{r}
+cutree(hclust.out, k = 3)
+```
+# Clusters e questões práticas
+
+- 4 métodos para medir a distância entre clusters
+  - Completo: semelhança de pares entre todas as observações no cluster 1 e 2, usa a maior das semelhanças
+  - Single: o mesmo que acima, mas usa a menor das semelhanças
+  - Média: o mesmo que acima, mas usa média de semelhanças
+  - Centróide: encontra o centróide do cluster 1 e 2, usa semelhança entre dois centróides
+
+- Regra de ouro
+  - Completas e médias produzem árvores mais equilibradas e são mais comumente usadas
+  - Single funde as observações uma de cada vez e produz mais árvores não balanceadas
+  - Centroid pode criar inversão onde os clusters são colocados abaixo de valores únicos. não é usado com frequência
+
+- Assuntos práticos
+  - Os dados precisam ser dimensionados para que os recursos tenham a mesma média e desvio padrão
+  - Características normalizadas têm uma média de zero e um sd de um
+
+# Métodos de ligação
+```{r}
+# Cluster usando ligação completa: hclust.complete
+hclust.complete <- hclust(dist(x), method = "complete")
+
+# Agrupe usando a ligação média: hclust.average
+hclust.average <- hclust(dist(x), method = "average")
+
+# Cluster usando link único: hclust.single
+hclust.single <- hclust(dist(x), method = "single")
+
+# Plotar dendrograma de hclust.complete
+plot(hclust.complete, main = "Complete")
+```
+# Plotar dendrograma de hclust.average
+```{r}
+plot(hclust.average, main = "Average")
+```
+# Introdução ao PCA
+
+Redução de dimensionalidade com PCA
+
+- Dois objetivos principais de redução de dimensionalidade
+  - Encontrar estrutura em recursos
+  - Ajuda na visualização
+
+- PCA tem 3 objetivos
+  - Encontre uma combinação linear de variáveis ​​para criar componentes principais
+  - Manter tanta variação nos dados quanto possível
+  - Componentes principais não são correlacionados (ou seja, ortogonais entre si)
+
+- Intuição
+  - Com um gráfico de dispersão de correlação x y, a melhor dimensão 1 para explicar a variância nos dados é a linha de regressão linear
+  - Este é o primeiro componente principal
+  - Então a distância dos pontos da linha é a pontuação do componente (eu realmente não entendo essa parte, mas entendo como a linha é uma maneira simples de explicar os dados bidimensionais e explica a maior parte da variação nos dados.)
+
+- Exemplo: componentes principais com conjunto de dados de íris
+  - Centro e escala - para cada ponto, subtraia a média e divida pelo dp
+  - O resumo do modelo mostra a proporção de variância explicada por cada componente principal
+  - Eu acho que a rotação é a distância do ponto de cada componente principal ou algo assim.
+
+# Dados PCA com iris
+```{r}
+summary(iris)
+```
+# Dados PCA
+```{r}
+pr.iris <- prcomp(x = iris[-5], scale = F, center = T)
+summary(pr.iris)
+```
+# Resultado do PCA
+```{r}
+pr.iris
+```
+# Resultados do PCA
+
+- Os modelos PCA produzem componentes adicionais de diagnóstico e saída:
+  - Center - o meio da coluna usado para centralizar os dados
+  - Scale - a coluna sd usada para dimensionar os dados
+  - Rotacao - a direcao dos vetores prin comp em termos das feições/variáveis originais. Essas informações de alguma forma permitem que você defina novos dados em termos dos componentes principais originais.
+  - x o valor de cada observação no conjunto de dados original projetado para os componentes principais.
+  
+  
+# Visualizando e interpretando os resultados do PCA
+
+- Biplot
+  - Mostra todas as observações originais como pontos plotados pelos 2 primeiros componentes principais ele também mostra os recursos originais como vetores mapeados nos 2 primeiros componentes principais.
+  - Com os dados da íris observe como a largura e o comprimento do pedal estão apontando na mesma direção
+  - Isso significa que as variáveis estão correlacionadas. um explica a cerca de toda a variância do outro.
+  - Encontrei uma função biplot melhor PCbiplot() no estouro de pilha, feita com ggplot2 e modifiquei isso para funcionar um pouco melhor. Eu uso isso na maioria dos casos porque é muito mais claro.
+
+- Scree plot
+  - Mostra a proporção de variância explicada por cada componente principal ou a variância cumulativa explicada por componentes sucessivos
+  - Toda a variação é explicada quando o número de componentes corresponde ao número de recursos/variáveis originais
+  - Alguns passos são necessários para obter a variação do sd para cada componente do gráfico
+
+```{r}
+# Criando um biplot
+# Isso não parece tão bonito quanto o que ele tinha no vídeo
+
+biplot(pr.iris)
+```
+# Gráfico
+```{r}
+biplot(pr.iris)
+```
+# Obtendo proporção de variância para um scree plot
+```{r}
+pr.var <- pr.iris$sdev^2
+pve <- pr.var / sum(pr.var)
+
+# Variação do gráfico explicada para cada componente principal
+plot(pve, 
+     xlab = "Principal Component",
+     ylab = "Proporção de Variação Explicada",
+     ylim = c(0,1), 
+     type = "b")
+```
+# Problemas práticos com PCA
+
+3 coisas precisam ser consideradas para um PCA bem-sucedido:
+
+- Dimensionando os dados
+Dados ausentes
+  - Ou abandoná-lo ou imputá-lo
+  - Características que são categorias
+
+- Solte-o ou codifique-o como números
+  - Isso não é abordado nesta aula (é necessário muito mais pré-processamento em aplicações do mundo real do que estamos fazendo aqui, acredito)
+  - Importância do escalonamento:
+
+- O conjunto de dados mtcars tem meios e sd muito diferentes
+  - Veja os resultados dos biplots com e sem escala
+  - Sem dimensionar o disp e o hp sobrecarregam os outros recursos simplesmente porque eles têm uma variação muito maior em suas unidades de medida
+
+```{r}
+# Dados - mtcars
+data(mtcars)
+head(mtcars)
+```
+# Resultado 
+```{r}
+round(colMeans(mtcars), 2)
+```
+# Resultado 2
+```{r}
+round(apply(mtcars, 2, sd), 2)
+```
+# Gráfico 
+```{r}
+pr.mtcars_no_scale <- prcomp(x = mtcars, scale = F, center = F)
+pr.mtcars_scale <- prcomp(x = mtcars, scale = T, center = T)
+
+biplot(pr.mtcars_no_scale)
+```
+# Gráfico do escalonamento
+```{r}
+biplot(pr.mtcars_scale)
+```
+# Projeto na prática - Modelo ML Câncer
+
+# Introdução ao estudo de caso
+- Dados do artigo de Bennet e Mangasarian.
+  - “Discriminação de programação linear robusta de dois conjuntos linearmente inseparáveis”
+  - Massa de mama humana que era ou não maligna
+
+- 10 características medidas de cada núcleo de célula (embora eu veja 30)
+  - Cada característica é uma estatística resumida das células naquela massa
+  - Inclui diagnóstico (alvo) - pode ser usado para aprendizado supervisionado, mas não será usado durante a análise não supervisionada
+  - Etapas gerais
+
+# Baixar e preparar dados
+  - EDA
+  - Realizar PCA e interpretar os resultados
+  - Tupes twy completos de agrupamento
+  - Entenda e compare os dois tipos
+  - Combinar PCA e clustering
+  – Preparando os dados
+
+# Dados
+url <- "http://s3.amazonaw
+
+
+# Preparando os dados
+```{r}
+url <- "http://s3.amazonaws.com/assets.datacamp.com/production/course_1903/datasets/WisconsinCancer.csv"
+
+# Baixe os dados: wisc.df
+wisc.df <- read.csv(url)
+str(wisc.df)
+```
+# Converte as características dos dados: wisc.data
+```{r}
+# Dados
+wisc.data <- as.matrix(wisc.df[, 3:32])
+str(wisc.data)
+```
+# Visualizando os dados
+```{r}
+# Visualizando os cinco primeiros dados
+head(wisc.data)
+```
+# Visualizando linhas e colunas
+```{r}
+# Visualizando linhas e colunas
+dim(wisc.data)
+```
+# Defina os nomes das linhas de wisc.data
+```{r}
+row.names(wisc.data) <- wisc.df$id
+head(wisc.data)
+```
+# Criando a coluna diagnóstico
+```{r}
+diagnosis <- as.numeric(wisc.df$diagnosis == "M")
+diagnosis
+```
+# Análise exploratória de dados
+
+- Quantas observações estão neste conjunto de dados?
+  569
+
+- Quantas variáveis/recursos nos dados são sufixados com _mean?
+  10
+
+- Quantas das observações têm um diagnóstico maligno?
+212
+
+```{r}
+str(wisc.data)
+```
+
+```{r}
+# Dados das váriaveis
+colnames(wisc.data)
+```
+
+```{r}
+# Tabela - diagnosis
+table(diagnosis)
+```
+# Executando PCA
+```{r}
+# Verifique as médias das colunas e os desvios padrão
+round(colMeans(wisc.data), 2)
+```
+```{r}
+round(apply(wisc.data, 2, sd), 2)
+```
+
+```{r}
+# Executa o PCA, dimensionando se apropriado: wisc.pr
+wisc.pr <- prcomp(wisc.data, scale = T, center = T)
+
+# Veja o resumo dos resultados
+summary(wisc.pr)
+```
+# Interpretando os resultados do PCA
+```{r}
+# Cria um biplot de wisc.pr
+biplot(wisc.pr)
+```
+# Gráfico scatter plot 
+```{r}
+# Observações do gráfico de dispersão pelos componentes 1 e 2
+plot(wisc.pr$x[, c(1, 2)], 
+     col = (diagnosis + 1), 
+     xlab = "PC1", 
+     ylab = "PC2")
+```
+
+```{r}
+# Repita para os componentes 1 e 3
+
+plot(wisc.pr$x[, c(1, 3)], 
+     col = (diagnosis + 1), 
+     xlab = "PC1", 
+     ylab = "PC3")
+```
+
+```{r}
+# Faça a exploração de dados adicionais de sua escolha abaixo (opcional)
+
+plot(wisc.pr$x[, c(2, 3)], 
+     col = (diagnosis + 1), 
+     xlab = "PC2", 
+     ylab = "PC3")
+```
+- Podemos ver nos gráficos que pc1 e pc2 se sobrepõem menos que pc1 e pc3.
+  - Isso é esperado, pois pc1 e pc2 devem ser ortogonais e explicar diferentes variâncias
+
+- PC2 e PC3 se sobrepõem mais do que qualquer um deles se sobrepõe com pc1
+
+# Variação explicada
+```{r}
+# Configurar grade de plotagem 1 x 2
+par(mfrow = c(1, 2))
+
+# Calcula a variabilidade de cada componente
+pr.var <- wisc.pr$sdev^2
+
+# Variação explicada por cada componente principal: pve
+pve <- pr.var / sum(pr.var)
+
+# Variação do gráfico explicada para cada componente principal
+plot(pve, xlab = "Principal componente", 
+     ylab = "Proporção de Variação Explicada", 
+     ylim = c(0, 1), type = "b")
+
+# Plotar proporção cumulativa de variância explicada
+plot(cumsum(pve), xlab = "Principal componente", 
+     ylab = "Proporção Cumulativa de Variação Explicada", 
+     ylim = c(0, 1), type = "b")
+```
+– Comunicação dos resultados do PCA
+  - Para o primeiro componente principal, qual é o componente do vetor de carregamento para o recurso concave.points_mean?
+-0,26085376
+ 
+ -Qual é o número mínimo de componentes principais necessários para explicar 80% da variância dos dados?
+ 5
+```{r}
+wisc.pr$rotation[1:10,1:2]
+```
+# Revisão do PCA e próximos passos
+– Agrupamento hierárquico de dados de caso
+
+```{r}
+# Dimensione os dados wisc.data: data.scaled
+head(wisc.data)
+
+data.scaled <- scale(wisc.data)
+head(data.scaled)
+```
+
+```{r}
+# Calcular as distâncias (euclidianas): data.dist
+data.dist <- dist(data.scaled)
+
+# Crie um modelo de cluster hierárquico: wisc.hclust
+wisc.hclust <- hclust(data.dist, method = "complete")
+```
+
+# Resultados do agrupamento hierárquico
+
+- Cortar a altura em 20 dará 4 cachos
+```{r}
+# Gráfico 
+plot(wisc.hclust)
+```
+# Gráficos
+
+- Eu meio que posso ver por que poderíamos cortar em 4. Isso nos dá os principais clusers e então temos alguns minúsculos à esquerda.
+
+- Seria legal se pudéssemos colorir as linhas pelo diagnóstico de alguma forma que nos ajudasse a ver onde devemos nos dividir.
+
+# Selecionando o número de clusters
+```{r}
+# Modelo
+# Corte a árvore para que ela tenha 4 clusters: wisc.hclust.clusters
+wisc.hclust.clusters <- cutree(wisc.hclust, k = 4)
+
+# Comparar a associação do cluster com o diagnóstico real
+table(wisc.hclust.clusters, diagnosis)
+```
+
+```{r}
+# Contagem de observações fora do lugar com base no cluster
+# Basicamente apenas somando os minutos da linha aqui
+
+sum(apply(table(wisc.hclust.clusters, diagnosis), 1, min))
+```
+- Parece que 54 tumores não estão claros com o diagnóstico baseado no cluster geral
+
+# Modelo KMEANS
+- k-means agrupando e comparando resultados
+```{r}
+# Crie um modelo k-means em wisc.data: wisc.km
+head(wisc.data)
+```
+# Modelo
+```{r}
+# Modelo
+wisc.km <- kmeans(scale(wisc.data), centers = 2, nstart = 20)
+
+# Comparar k-means com diagnósticos reais
+table(wisc.km$cluster, diagnosis)
+```
+
+# Resultado modelo
+- 51 tumores com o diagnóstico baseado no cluster geral
+```{r}
+sum(apply(table(wisc.km$cluster, diagnosis), 1, min))
+```
+# Comparar k-means com agrupamento hierárquico
+```{r}
+# Tabela
+table(wisc.hclust.clusters, wisc.km$cluster)
+sum(apply(table(wisc.hclust.clusters, wisc.km$cluster), 1, min))
+
+```
+# Agrupamento nos resultados do PCA
+
+- Lembre-se de exercícios anteriores que o modelo PCA exigia significativamente menos recursos para descrever 80% e 95% da variabilidade dos dados.
+
+- Além de normalizar os dados e potencialmente evitar overfitting, o PCA também descorrelaciona as variáveis, algumas vezes melhorando o desempenho de outras técnicas de modelagem.
+```{r}
+# Crie um modelo de cluster hierárquico: wisc.pr.hclust
+summary(wisc.pr)
+```
+
+```{r}
+wisc.pr.hclust <- hclust(dist(wisc.pr$x[, 1:7]), method = "complete")
+
+# Corte o modelo em 4 clusters: wisc.pr.hclust.clusters
+wisc.pr.hclust.clusters <- cutree(wisc.pr.hclust, k = 4)
+
+# Compare com diagnósticos reais
+t <- table(wisc.pr.hclust.clusters, diagnosis)
+t
+
+# Resultado final
+sum(apply(t, 1, min))
+```
+- Resultado deu positivo com 102 caos de casos tipo de tumores
+```{r}
+# Comparar com modelo k-means e hierárquico
+t <- table(wisc.hclust.clusters, diagnosis)
+t
+```
+
+```{r}
+# Resultado do KMEANS
+sum(apply(t, 1, min))
+
+t <- table(wisc.km$cluster, diagnosis)
+t
+
+sum(apply(t, 1, min))
+```
+- Parece que o 2 cluster k-means faz o melhor trabalho
+- Todo o propósito disso é ver se os resultados do agrupamento podem ser úteis em um processo de aprendizado supervisionado.
+  - Acho que pode valer a pena adicionar os clusters k-means a um modelo. Pode ser. Eu acho que eu poderia tentar com e sem e ver o que é melhor em prever agora que eu sei como fazer isso. : )
+
+# Conclusão
+- Esta foi uma visão geral de alto nível sobre os tópicos de clustering hierárquico e k-means e PCA
+- Acho que abrange alguns bons conceitos, como seleção de modelos de variáveis, interpretação e dimensionamento de dados
+
+- Eu tive um pouco de intuição sobre como os algoritmos funcionam 
+- Não sinto que conheço bem esses tópicos ou que estou pronto para basear as decisões de negócios no meu conhecimento dessas técnicas de modelo.
+- Foi uma boa maneira de começar e agora estou definitivamente pronto para aprofundar essas técnicas.
+
+# Observação
+Neste modelo ML curso da datacamp de machine learning - Aprendizado não supervisionado em R
